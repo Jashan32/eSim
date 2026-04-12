@@ -176,7 +176,7 @@ function installKicad
     fi
 
     # Install KiCad packages
-    sudo apt-get install -y --no-install-recommends kicad kicad-footprints kicad-libraries kicad-symbols kicad-templates
+    sudo snap install kicad --classic
 
     echo "KiCad installation completed successfully!"
 }
