@@ -263,31 +263,30 @@ function copyKicadLibrary
     #Extract custom KiCad Library
     tar -xJf library/kicadLibrary.tar.xz
 
-    if [ -d ~/.config/kicad/6.0 ];then
+    # Ensure config directory exists
+    if [ -d ~/.config/kicad/8.0 ]; then
         echo "kicad config folder already exists"
     else 
-        echo ".config/kicad/6.0 does not exist"
-        mkdir -p ~/.config/kicad/6.0
+        echo ".config/kicad/8.0 does not exist"
+        mkdir -p ~/.config/kicad/8.0
     fi
 
     # Copy symbol table for eSim custom symbols 
-    cp kicadLibrary/template/sym-lib-table ~/.config/kicad/6.0/
-    echo "symbol table copied in the directory"
+    cp kicadLibrary/template/sym-lib-table ~/.config/kicad/8.0/
+    echo "symbol table copied"
+
+    # Create correct user symbol directory
+    mkdir -p ~/Documents/KiCad/8.0/symbols
 
     # Copy KiCad symbols made for eSim
-    sudo cp -r kicadLibrary/eSim-symbols/* /usr/share/kicad/symbols/
+    cp -r kicadLibrary/eSim-symbols/* ~/Documents/KiCad/8.0/symbols/
 
-    set +e      # Temporary disable exit on error
-    trap "" ERR # Do not trap on error of any command
-    
-    # Remove extracted KiCad Library - not needed anymore
+    # Cleanup
+    set +e
+    trap "" ERR
     rm -rf kicadLibrary
-
-    set -e      # Re-enable exit on error
+    set -e
     trap error_exit ERR
-
-    #Change ownership from Root to the User
-    sudo chown -R $USER:$USER /usr/share/kicad/symbols/
 
 }
 
