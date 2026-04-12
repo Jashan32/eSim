@@ -251,6 +251,9 @@ function installDependency
     echo "Installing volare"
     sudo apt-get install -y xz-utils
     pip3 install volare
+
+    echo "installing software-properties-common.................."
+    sudo apt-get install software-properties-common
 }
 
 
