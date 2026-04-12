@@ -311,6 +311,8 @@ function createDesktopStartScript
     # Remove local copy of esim start script
     rm esim-start.sh
 
+    sudo rm -f esim.desktop
+
     # Generating esim.desktop file
     echo "[Desktop Entry]" > esim.desktop
     echo "Version=1.0" >> esim.desktop
@@ -332,6 +334,10 @@ function createDesktopStartScript
     sudo chmod 755 esim.desktop
     # Copy desktop icon file to share applications
     sudo cp -vp esim.desktop /usr/share/applications/
+
+    # Ensure Desktop directory exists (FIX)
+    mkdir -p $HOME/Desktop
+
     # Copy desktop icon file to Desktop
     cp -vp esim.desktop $HOME/Desktop/
 
