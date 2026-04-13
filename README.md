@@ -1,5 +1,12 @@
 # eSim 2.5 Installation on Ubuntu 25.04 – Issue Analysis & Fixes
 
+## 🎥 Installation Walkthrough
+ [![Watch Installation Video](https://img.youtube.com/vi/_p35yCoRHgs/hqdefault.jpg)](https://youtu.be/_p35yCoRHgs)
+
+## Full Report PDF (Updated):
+https://drive.google.com/file/d/1nA_XPkIcnUJ5AZn4kUS-cbd2xf1xGAC-/view?usp=sharing  
+### ⚠️ Initially I assumed LLVM 11 based on script expectation, but during debugging I observed compatibility issues with newer LLVM versions and resolved it by aligning to a stable supported version (LLVM 16/18), which fixed GHDL build errors.
+
 ## 📌 Overview
 This project involves installing **eSim 2.5** on **Ubuntu 25.04 (latest non-LTS release)** and systematically identifying and resolving dependency and script-related issues.
 
@@ -25,7 +32,7 @@ Additionally, the `/src`, `/images`, and `/library` directories are bundled to e
 ### Packaging Enhancements
 - Made installer self-contained by bundling required resources
  
-## 📦 This repository includes:
+## 📦 Repository Contents
 - Issues encountered during installation
 - Root cause analysis
 - Fixes implemented in the installer script
@@ -89,12 +96,13 @@ Detected Ubuntu Version:
 Unsupported Ubuntu version: 25.04 ()
 ```
 
-**Cause:** `install-eSim.sh` uses a case statement based on Ubuntu version and it opens its corresponding version's file, but for 25.04 no such file exist so it fallback to this error message.
+**Cause:** `install-eSim.sh` uses a case statement based on Ubuntu version and opens the corresponding version-specific file, but for 25.04 no such file exists, so it falls back to this error message.
 
-**Fix:** create `install-eSim-25.04.sh` and link it to new case for version 25.04.
+**Fix:** Create `install-eSim-25.04.sh` and link it to a new case for version 25.04.
 
 ### 2. Missing `lsb-release`
-**Issue:** Script failed during Ubuntu version detection.  
+**Issue:** Script failed during Ubuntu version detection. 
+
 **Error:**
 ``` bash
 ./install-eSim.sh: line 26: lsb_release: command not found
@@ -104,32 +112,42 @@ Unsupported Ubuntu version: 25.04 ()
 ``` bash
 sudo apt install -y lsb-release
 ```
-**Change Made:** Added installation before usage in script.
+**Change:** Added installation before usage in script.
 
 ### 3. Incorrect xz-utils Installation Command
-**Issue:** Script used incorrect syntax (apt-get xz-utils).  
+**Issue:** Script used incorrect syntax (apt-get xz-utils). 
+
 **Error:** 
 ``` bash
 E: Invalid operation xz-utils
 ```
-**Fix:**
-
+**Fix:**  
+remove:
+```bash
+apt-get xz-utils
+```
+add:
 ``` bash
-~~apt-get xz-utils~~
 sudo apt-get install -y xz-utils
 ```
-**Change Made:** Corrected package name and command format.
+**Change:** Corrected package name and command format.
 
 ### 4. KiCad Installation Failure (APT → SNAP Migration)
-**Issue:** APT installation failed due to repository/version mismatch on Ubuntu 25.04.  
+**Issue:**  KiCad packages were not available in the Ubuntu 25.04 repositories, resulting in
+installation failures. Using Snap provides a reliable and up-to-date installation method.  
+
  **Fix:**
 ``` bash
 sudo snap install kicad --classic
 ```
-**Change Made:** Replaced APT-based installation with Snap for stability.
+**Change:** Replaced APT-based installation with Snap for stability.
 
 ### 5. KiCad Library Path Incompatibility (KiCad 8)
-**Issue:** Script was using old KiCad 6 directory structure (~/.config/kicad/6.0).  
+**Issue:** The original script used KiCad 6 directory paths, which are incompatible with
+KiCad 8. This caused failures in locating configuration and symbol files. Updating the paths
+ensures compatibility with the KiCad 8 directory structure. Additionally, shifting from systemwide directories to user-level paths avoids permission issues and aligns with best practices,
+especially for Snap-based installations.  
+
 **Fix:**
 Updated paths to:
 ```
@@ -138,28 +156,45 @@ Updated paths to:
 ```
 Removed system-wide writes (/usr/share/kicad) and switched to user directories.
 
-**Change Made:** Ensured compatibility with KiCad 8 structure and permissions.
+**Change:** Ensured compatibility with KiCad 8 structure and permissions.
 
-### 6. Permission Issues in SKy130 & Volare Setup
+### 6. Permission Issues in SKY130 & Volare Setup
 **Issue:** volare commands failed under sudo due to missing PATH resolution.  
+
+**Error:**
+``` bash
+volare: command not found
+```
 **Fix:**
 ``` bash
-sudo $(which volare) enable --pdk sky130 --pdk-root /usr/share/local/
+sudo $(which volare) enable --pdk SKY130 --pdk-root /usr/share/local/
 ```
-**Change Made:** Explicit binary path used with sudo + ensured directory handling.
+**Change:** Explicit binary path used with sudo + ensured directory handling.
 
 
 ### 7. Missing Desktop Directory & Shortcut Issues
 **Issue:** Script assumed ~/Desktop exists and failed during shortcut creation.  
-**Fix:**
+
+**Error:**
+``` bash
+Permission denied
+cp: cannot create regular file '/home/user/Desktop/esim.desktop': No such file or directory
+``` 
+**Fix:**  
+Before generating desktop file:
+``` bash
+sudo rm -f esim.desktop
+```
+Before copying icons to desktop:
 ``` bash
 mkdir -p $HOME/Desktop
 ```
-**Change Made:** Added directory existence check + improved permission handling.
+**Change:** Added directory existence check + improved permission handling.
 
 
-### 8. Missing software-properties-common
+### 8. Missing `software-properties-common`
 **Issue:** Required for repository management but not installed.  
+
 **Fix:**
 ``` bash
 sudo apt-get install -y software-properties-common
@@ -167,8 +202,9 @@ sudo apt-get install -y software-properties-common
 
 
 ### 9. LLVM Version Mismatch (Critical Fix)
-**Issue:** Script relied on system LLVM (v11), which caused GHDL build failures.  
-**Fix Implemented:** Built LLVM 16 from source.
+**Issue:** Script relied on system LLVM (v20), which caused GHDL build failures.  
+
+**Fix:** Built LLVM 16 from source.
 
 ``` bash
 install_llvm16() {
@@ -199,7 +235,8 @@ install_llvm16() {
   export LLVM_CONFIG=/opt/llvm-16/bin/llvm-config
 }
 ```
-**Impact:** This resolves incompatibility with outdated LLVM (v11) and enables successful GHDL compilation on modern Ubuntu systems.  
+**Impact:** Ubuntu 25.04 ships with LLVM (v20) which is incompatible with GHDL, causing build script to fail. To resolve this version mismatch, LLVM 16 was built from source, ensuring compatibility and enabling successful GHDL compilation.   
+
 **Result:** Ensured modern LLVM compatibility required by GHDL.
 
 
@@ -209,7 +246,7 @@ install_llvm16() {
 ``` bash
 ./configure --with-llvm-config=/opt/llvm-16/bin/llvm-config
 ```
-**Change Made:** Updated installGHDL() to use LLVM 16 path.
+**Change:** Updated installGHDL() to use LLVM 16 path.
 
 ---
 
